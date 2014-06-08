@@ -2,7 +2,7 @@ import keyring
 from peewee import PostgresqlDatabase
 from peewee import Model
 
-DB_HOST = 'laxlinux'
+DB_HOST = 'localhost'
 DB_NAME = 'callipyge'
 DB_USER = 'callipyge'
 DB_PASS = keyring.get_password('db-' + DB_HOST, DB_USER)
