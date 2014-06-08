@@ -77,6 +77,17 @@ def parse_args():
     return parser.parse_args()
 
 
+def db_init():
+    '''
+    Create all tables and a superuser
+    '''
+    for table in [AccessRights, Credentials, Inventory, Users]:
+        if table.table_exists():
+            raise NameError('The table {} already exists'.format(table.__name__))
+        table.create_table()
+    print('Success')
+
+
 def grant(hostname, user, account_name, verbose=False):
     '''
     Grant access to some credentials
@@ -194,6 +205,8 @@ if __name__ == '__main__':
     )
 
     # The real action start here
+    if args.init:
+        db_init()
     if args.purge:
         purge()
     if args.login:
