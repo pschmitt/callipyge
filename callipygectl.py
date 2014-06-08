@@ -28,9 +28,12 @@ def parse_args():
     group.add_argument('--grant',
                        action='store',
                        help='Grant access to credentials to USER')
-    group.add_argument('--purge',
-                       action='store_true',
-                       help='Truncate all tables (remove ALL data)')
+    parser.add_argument('--login',
+                        action='store',
+                        help='Check credentials by logging in')
+    parser.add_argument('--purge',
+                        action='store_true',
+                        help='Truncate all tables (remove ALL data)')
     group.add_argument('--add',
                        action='store',
                        help='Add new credentials')
@@ -52,26 +55,60 @@ def grant(hostname, user, account_name, verbose=False):
     Credentials.create(access=ar.identifier, password=cipher)
 
 
-def register_user(username, password, passphrase, verbose=False):
+def register_user(username, password, passphrase=None, verbose=False):
     '''
     Register a new user
     '''
+    if passphrase is None:
+        passphrase = password
     crypt.rsa_gen(username, passphrase, verbose=verbose)
     hashed_password, salt = crypt.salt_hash(password)
     Users.create(
         username=username,
-        salt=str(salt),
-        password=str(hashed_password)
+        salt=salt,
+        password=hashed_password
     )
 
 
-def unregister_user(username, password, passphrase, verbose=False):
+def log_in(username, password, verbose=False):
+    '''
+    Try to log in using the specified credentials
+    If login is successfull the corresponding Users row is returned
+    Else False is returned
+    '''
+    try:
+        user = Users.get(Users.username == username)
+        hashed_password, salt = crypt.salt_hash(
+            plaintext=password,
+            salt=user.salt
+        )
+        # if verbose:
+        #     print('HASHED_PW:', hashed_password, '\n',
+        #           'USER PW: ', user.password, '\n',
+        #           'SALT:    ', salt, '\n'
+        #           'USER SALT', user.salt, '\n',
+        #           'PASSWORD :', password, '\n',
+        #           file=sys.stderr)
+        if user.password == hashed_password:
+            return user
+        else:
+            return False
+    except Users.DoesNotExist:
+        return False
+    return False
+
+
+def unregister_user(username, password, control_user=None, verbose=False):
     '''
     Unregister an existing user
     '''
-    # TODO Access Control! Only the superuser should be allowed to remove
-    # others
-    u = Users.get(Users.username == username)
+    if control_user is not None:
+        # Try to log in as admin
+        if not log_in(control_user, password):
+            return False
+    u = log_in(username, password)
+    if not u:
+        return False
     u.delete_instance()
     # TODO remove RSA Keypair
 
@@ -100,16 +137,23 @@ if __name__ == '__main__':
     args = parse_args()
     verbose = args.verbose
     db_connect()
-    if args.register:
-        password = getpass.getpass('Password: ')
-        passphrase = getpass.getpass('Passphrase: ')
-        register_user(args.register, password, passphrase, verbose)
-    if args.unregister:
-        unregister_user(args.unregister, None, None, verbose)
-    if args.grant:
-        pass
     if args.purge:
         purge()
+    if args.login:
+        password = getpass.getpass('Password: ')
+        if log_in(args.login, password):
+            print('Success')
+        else:
+            print('Failure')
+    if args.register:
+        password = getpass.getpass('Password: ')
+        # passphrase = getpass.getpass('Passphrase: ')
+        register_user(args.register, password, verbose=verbose)
+    if args.unregister:
+        root_password = getpass.getpass('Admin password: ')
+        unregister_user(args.unregister, root_password, verbose)
+    if args.grant:
+        passcontrol_user = None,
     if args.add:
         account_name, hostname = tuple(args.add.split('@', 1))
         user = input('Callipyge username: ')

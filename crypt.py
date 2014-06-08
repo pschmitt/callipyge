@@ -6,6 +6,7 @@ Author: Philipp Schmitt <philipp@schmitt.co>
 import hashlib
 import openssl_cmds as sslcmd
 import os
+from base64 import b64encode
 from collections import namedtuple
 from utils import shell_exec
 
@@ -13,12 +14,12 @@ from utils import shell_exec
 KEYSTORE = '/tmp'
 
 
-def get_salt(length=1024):
+def get_salt(length=1024, encoding='utf-8'):
     '''
     Get a random salt value
     '''
     # TODO CSPRNG python implementation to generate the salt
-    return os.urandom(length)
+    return b64encode(os.urandom(length)).decode(encoding)
 
 
 def keystore_path(username):
@@ -47,7 +48,7 @@ def salt_hash(plaintext, salt=None, encoding='utf-8'):
     '''
     if salt is None:
         salt = get_salt()
-    hashed = hashlib.sha512(plaintext.encode(encoding) + salt).hexdigest()
+    hashed = hashlib.sha512((plaintext + salt).encode(encoding)).hexdigest()
     return hashed, salt
 
 
