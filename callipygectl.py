@@ -178,12 +178,16 @@ if __name__ == '__main__':
         password = getpass.getpass('Callipyge password: ')
 
     # Connect to database
+    db_host = db_port = None
+    if args.db_host is not None:
+        db_host, db_port = args.db_host.split(':', 1)
     # Prompt for password if no password was provided
     db_password = args.db_password
     if db_password == PASSWORD_DEFAULT:
         db_password = getpass.getpass('Database password: ')
     db_connect(
-        host=args.db_host,
+        host=db_host,
+        port=db_port,
         database=args.db_name,
         user=args.db_user,
         password=db_password
