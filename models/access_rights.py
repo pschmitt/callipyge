@@ -13,6 +13,7 @@ from peewee import ForeignKeyField
 class AccessRights(BaseModel):
     host = ForeignKeyField(db_column='host_id', rel_model=Inventory)
     user = ForeignKeyField(db_column='user_id', rel_model=Users)
+    created_by = ForeignKeyField(db_column='created_by', rel_model=Users)
 
     class Meta:
         db_table = 'access_rights'
