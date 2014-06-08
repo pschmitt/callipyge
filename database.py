@@ -11,7 +11,7 @@ DB_PASS = keyring.get_password('db-' + DB_HOST, DB_USER)
 db = PostgresqlDatabase(None, threadlocals=True)
 
 
-def db_connect(host, database, user, password):
+def db_connect(host=None, database=None, user=None, password=None):
     '''
     Initialize our database
     '''
@@ -26,7 +26,7 @@ def db_connect(host, database, user, password):
     db.init(database,
             host=host,
             user=user,
-            passwd=password)
+            password=password)
 
 
 class BaseModel(Model):

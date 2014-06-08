@@ -3,8 +3,8 @@ Inventory
 Author: Philipp Schmitt
 '''
 
-from ..database import BaseModel
-from .users import Users
+from database import BaseModel
+from models.users import Users
 from peewee import BlobField
 from peewee import CharField
 from peewee import ForeignKeyField

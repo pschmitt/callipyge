@@ -3,7 +3,7 @@ Users
 Author: Philipp Schmitt
 '''
 
-from ..database import BaseModel
+from database import BaseModel
 from peewee import CharField
 from peewee import TextField
 

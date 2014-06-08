@@ -2,12 +2,13 @@
 
 '''
 
-from models.users import Users
+from database import db_connect
 from models.access_rights import AccessRights
 from models.credentials import Credentials
 from models.inventory import Inventory
-from keyring.backend import KeyringBackend
+from models.users import Users
 from utils import shell_exec
+from keyring.backend import KeyringBackend
 import hashlib
 import keyring
 import os
@@ -45,7 +46,7 @@ class CallipygeBackend(KeyringBackend):
             decrPwd = shell_exec('openssl rsautl -decrypt -inkey ' +
                                  username + '_private.pem <<<' + cipher)
         else:
-            raise NameError("You don't have access to requested host using this user")
+            raise NameError("You don't have access to the requested host")
         return decrPwd
 
     def set_password(self, service, username, password):
@@ -68,22 +69,28 @@ class CallipygeBackend(KeyringBackend):
         inv = Inventory.get(hostname=service, account_name=account)
         ar = AccessRights.create(created_by=self.user.id,
                                  user=user.id, host=inv.id)
-        str = 'echo '+inv.account_password+' | openssl rsautl -decrypt -inkey PATH/'+self.user+'_private.pem'
-        plain = shell_exec(str, verbose=True)
-        str = 'openssl rsautl -encrypt -inkey ' + user + '_public.pem -pubin <<< ' + plain
-        cipher = shell_exec(str, verbose=True)
-        Credentials.create(access=ar.id, password=cipher)
+        cmd = 'openssl rsautl -decrypt -inkey PATH/' + self.user + \
+              '_private.pem <<< ' + inv.account_password
+        plain = shell_exec(cmd, verbose=True)
+        cmd = 'openssl rsautl -encrypt -inkey ' + user + '_public.pem -pubin ' + \
+              '<<< ' + plain
+        cipher = shell_exec(cmd, verbose=True)
+        Credentials.create(access=ar.identifier, password=cipher)
 
     def register_user(username, password, passphrase):
-        shell_exec('openssl genrsa -aes256 -out '+username+'_private.pem -passout pass:'+passphrase+' 4096')
-        shell_exec('openssl rsa -in '+username+'_private.pem -outform PEM -pubout -out '+username+'_public.pem')
+        shell_exec('openssl genrsa -aes256 -out ' + username +
+                   '_private.pem -passout pass:' + passphrase + ' 4096')
+        shell_exec('openssl rsa -in ' + username +
+                   '_private.pem -outform PEM -pubout -out ' +
+                   username + '_public.pem')
         # TODO find some CSPRNG in python to feed the salt
         salt = os.urandom(512)
         pwd = hashlib.sha512(password.encode('utf-8')+salt).hexdigest()
         Users.create(username=username, salt=salt, password=pwd)
 
 if __name__ == '__main__':
-    c = CallipygeBackend("root")
+    db_connect()
+    c = CallipygeBackend('root')
     keyring.set_keyring(c)
     keyring.set_password('test@localhost', 'root', 'test')
     assert keyring.get_password('test@localhost', 'root') == 'test'
