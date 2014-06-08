@@ -26,6 +26,7 @@ def shell_exec(cmd, verbose=False):
     except Exception as err:
         if verbose:
             print('Caught an exception {}'.format(err), file=sys.stderr)
+            raise
         return None
     if verbose:
         print('Output: %s' % output)
