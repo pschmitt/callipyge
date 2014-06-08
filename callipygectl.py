@@ -12,6 +12,8 @@ import crypt
 import getpass
 import keyring
 
+PASSWORD_DEFAULT = 'SOMERANDOMGIBBERISH'
+
 
 def parse_args():
     '''
@@ -19,27 +21,59 @@ def parse_args():
     '''
     parser = argparse.ArgumentParser(description='Process args')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--register',
+    group.add_argument('-r', '--register',
                        action='store',
                        help='Register a new user')
     group.add_argument('--unregister',
                        action='store',
                        help='Unregister an existing user')
-    group.add_argument('--grant',
+    group.add_argument('-g', '--grant',
                        action='store',
                        help='Grant access to credentials to USER')
-    parser.add_argument('--login',
-                        action='store',
+    parser.add_argument('-l', '--login',
+                        action='store_true',
                         help='Check credentials by logging in')
     parser.add_argument('--purge',
                         action='store_true',
                         help='Truncate all tables (remove ALL data)')
-    group.add_argument('--add',
+    group.add_argument('-a', '--add',
                        action='store',
                        help='Add new credentials')
+    group.add_argument('--init',
+                       action='store_true',
+                       help='Initialise the database')
+    parser.add_argument('-u', '--user',
+                        action='store',
+                        help='Callipyge username')
+    parser.add_argument('-p', '--password',
+                        action='store',
+                        nargs='?',
+                        const=PASSWORD_DEFAULT,
+                        help='Callipyge username')
+    parser.add_argument('-H', '--db-host',
+                        dest='db_host',
+                        action='store',
+                        help='Database host (host:port)')
+    parser.add_argument('-N', '--db-name',
+                        dest='db_name',
+                        action='store',
+                        help='Database to connect to')
+    parser.add_argument('-U', '--db-user',
+                        dest='db_user',
+                        action='store',
+                        help='Database username')
+    parser.add_argument('-P', '--db-password',
+                        dest='db_password',
+                        action='store',
+                        nargs='?',
+                        const=PASSWORD_DEFAULT,
+                        help='Database password')
     parser.add_argument('-v', '--verbose',
                         action='store_true',
                         help='Verbose output')
+    parser.add_argument('-D', '--debug',
+                        action='store_true',
+                        help=argparse.SUPPRESS)
     return parser.parse_args()
 
 
@@ -136,12 +170,30 @@ def add_credentials(user, password, hostname, account_name,
 if __name__ == '__main__':
     args = parse_args()
     verbose = args.verbose
-    db_connect()
+
+    user = args.user
+    password = args.password
+    # Prompt for password if no password was provided
+    if password == PASSWORD_DEFAULT:
+        password = getpass.getpass('Callipyge password: ')
+
+    # Connect to database
+    # Prompt for password if no password was provided
+    db_password = args.db_password
+    if db_password == PASSWORD_DEFAULT:
+        db_password = getpass.getpass('Database password: ')
+    db_connect(
+        host=args.db_host,
+        database=args.db_name,
+        user=args.db_user,
+        password=db_password
+    )
+
+    # The real action start here
     if args.purge:
         purge()
     if args.login:
-        password = getpass.getpass('Password: ')
-        if log_in(args.login, password):
+        if log_in(user, password):
             print('Success')
         else:
             print('Failure')
@@ -151,7 +203,11 @@ if __name__ == '__main__':
         register_user(args.register, password, verbose=verbose)
     if args.unregister:
         root_password = getpass.getpass('Admin password: ')
-        unregister_user(args.unregister, root_password, verbose)
+        unregister_user(
+            args.unregister,
+            password=root_password,
+            verbose=verbose
+        )
     if args.grant:
         pass
     if args.add:
