@@ -153,7 +153,7 @@ if __name__ == '__main__':
         root_password = getpass.getpass('Admin password: ')
         unregister_user(args.unregister, root_password, verbose)
     if args.grant:
-        passcontrol_user = None,
+        pass
     if args.add:
         account_name, hostname = tuple(args.add.split('@', 1))
         user = input('Callipyge username: ')
