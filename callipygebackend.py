@@ -1,14 +1,13 @@
 '''
-
+CallipygeBackend
+Author: Philipp Schmitt
 '''
 
 from database import db_connect
-from models.access_rights import AccessRights
-from models.credentials import Credentials
-from models.inventory import Inventory
-from models.users import Users
+from models import AccessRights
+from models import Inventory
+from models import Users
 from keyring.backend import KeyringBackend
-import hashlib
 import keyring
 import crypt
 
@@ -23,10 +22,17 @@ class CallipygeBackend(KeyringBackend):
         self.user = Users.get(username=username)
         self.verbose = verbose
 
-    def getencrPwd(self, something):
+    def get_encrypted_password(self, something):
+        '''
+        TODO What's this supposed to do?
+        Return the encrypted password of a user?
+        '''
         pass
 
-    def getAccesspwd(self, service, username):
+    def get_access_password(self, service, username):
+        '''
+        TODO What's this supposed to do?
+        '''
         pass
 
     def check_access_right(self, host, account_name):
@@ -43,7 +49,7 @@ class CallipygeBackend(KeyringBackend):
         access_id = self.check_access_right(service, username)
         if access_id != -1:
             # TODO
-            cipher = self.getencrPwd(0)
+            cipher = self.get_encrypted_password(0)
             plaintext = crypt.rsa_dec(self.user, cipher)
         else:
             raise NameError("You don't have access to the requested host")
@@ -53,7 +59,7 @@ class CallipygeBackend(KeyringBackend):
         '''
         Set a (new) password
         '''
-        enc_pass = crypt.rsa_enc((self.user, password), verbose=self.verbose)
+        enc_pass = crypt.rsa_enc(self.user, password, verbose=self.verbose)
         Inventory.create(hostname=service, account_name=username,
                          account_password=enc_pass)
 

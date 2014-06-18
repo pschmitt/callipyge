@@ -3,10 +3,10 @@
 
 from callipygebackend import CallipygeBackend
 from database import db_connect
-from models.access_rights import AccessRights
-from models.inventory import Inventory
-from models.credentials import Credentials
-from models.users import Users
+from models import AccessRights
+from models import Inventory
+from models import Credentials
+from models import Users
 import argparse
 import crypt
 import getpass
